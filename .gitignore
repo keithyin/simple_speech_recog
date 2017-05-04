@@ -1,0 +1,13 @@
+
+#pycharm
+.idea*
+__pycache__/
+
+#ckpt file
+ckpt/
+
+#data dir
+data/
+
+#rar file
+*.rar
