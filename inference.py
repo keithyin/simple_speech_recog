@@ -29,8 +29,9 @@ def main(_):
     # prepare data
     root_dir = "data"
     _, test_files= split_file_names(root_dir)
+    #print(len(test_files))
     id2cls, cls2id = generating_cls()
-    bg = BatchGenerator(config, _, cls2id=cls2id)
+    bg = BatchGenerator(config, test_files, cls2id=cls2id)
     iter_bg = iter(bg)
 
     # build model

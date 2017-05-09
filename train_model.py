@@ -3,6 +3,8 @@
 2. ckpt/1-bi-rnn-gru-tanh-l2norm/
 3. ckpt/1-bi-rnn-lstm-tanh-l2norm/
 4. ckpt/2-bi-rnn-lstm-tanh-l2norm/
+5. ckpt/2-bi-rnn-lstm-tanh-l1-l2norm/
+6. ckpt/2-bi-rnn-lstm-tanh-l2norm-aug/
 """
 import tensorflow as tf
 from models import *
@@ -11,7 +13,7 @@ from utils import *
 FLAG = False
 COUNTER = 0
 
-LOG_DIR = 'ckpt/3-bi-rnn-lstm-tanh-l2norm/'
+LOG_DIR = "ckpt/2-bi-rnn-lstm-tanh-l2norm-aug/"
 
 
 def one_iteration(model, batch_data, step, writer, sess=None):
@@ -68,7 +70,7 @@ def main(_):
         # train model
         tf.global_variables_initializer().run()
         #8180
-        saver.restore(sess, save_path=LOG_DIR+'rnn-model.ckpt')
+        #saver.restore(sess, save_path=LOG_DIR+'rnn-model.ckpt')
 
         writer = tf.summary.FileWriter(logdir=LOG_DIR, graph=sess.graph)
         for i in range(config.num_iterations):

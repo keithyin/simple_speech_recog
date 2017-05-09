@@ -1,7 +1,6 @@
 # author: keithyin
 # date: 2017.04.18
-import time
-import visdom
+from pydub import AudioSegment
 import scipy.io.wavfile as wav
 import numpy as np
 import os
@@ -106,12 +105,27 @@ def process_audio(file_name):
     :param file_name: string
     :return: processed audio , shape is [None, 13]
     """
-    fs, audio = wav.read(file_name)
+    random_db = np.random.randint(-10, 10, size=[])
+    song_ = AudioSegment.from_wav(file_name)
+    fs = song_.frame_rate
+    song = song_+int(random_db)
+    #song = song_
+    audio = raw2ndarray(song.raw_data, file_name)
+
     processed_audio = mfcc(audio, samplerate=fs)
     delta1 = delta(processed_audio, 1)
     delta2 = delta(processed_audio, 2)
     res = np.concatenate((processed_audio, delta1, delta2), axis=1)
     return res
+
+
+def raw2ndarray(raw_data, file_name):
+    data = np.fromstring(raw_data, dtype=np.int16)
+    try:
+        data = np.reshape(data, [-1, 2])
+    except Exception as e:
+        data = data[:, np.newaxis].repeat(2, axis=-1)
+    return data
 
 
 def car_id_to_index(car_id, cls2id):
