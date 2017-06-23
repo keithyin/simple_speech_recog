@@ -2,7 +2,8 @@ from models import *
 import tensorflow as tf
 from utils import *
 
-LOG_DIR = 'ckpt/3-bi-rnn-lstm-tanh-l2norm/'
+LOG_DIR = 'ckpt/2-bi-rnn-lstm-tanh-l2norm-aug/'
+
 
 def one_iteration(model, batch_data, step, sess=None):
     features = batch_data['features']

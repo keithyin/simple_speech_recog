@@ -8,7 +8,7 @@ from tensorflow.contrib import rnn
 import re
 from tensorflow.contrib import layers
 
-
+tf.multiply()
 class BiRnnModel(BaseModel):
     def __init__(self, config, rnn_type="lstm", activation_func='tanh', train=True):
         super(BiRnnModel, self).__init__(config, rnn_type, activation_func, train)

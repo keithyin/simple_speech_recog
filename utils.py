@@ -33,7 +33,7 @@ class ConfigTest(object):
 class ConfigDelta(object):
     hidden_size = 100
     feature_size = 39
-    batch_size = 50
+    batch_size = 20
     num_iterations = 10000
     num_classes = 38
 
@@ -163,7 +163,7 @@ class BatchGenerator(object):
     """
     construct a batch generator to generator the next batch
     """
-    def __init__(self, config, file_names, cls2id, max_epoch=10000):
+    def __init__(self, config, file_names, cls2id):
         self.file_names = file_names
         self.num_samples = len(self.file_names)
         self.indices = np.arange(0, self.num_samples)
@@ -171,8 +171,7 @@ class BatchGenerator(object):
         self.batch_counter = 0
         self.num_batches = self.num_samples // config.batch_size
         self.cls2id = cls2id
-        self.counter_epoch = 0
-        self.max_epoch =max_epoch
+        np.random.shuffle(self.indices)
 
     def __iter__(self):
         return self
@@ -185,12 +184,9 @@ class BatchGenerator(object):
         - labels: [batch_size, 7]
         - seq_length: [batch_size]
         """
-        if not self.batch_counter < self.num_batches-1:
-            np.random.shuffle(self.indices)
-            self.counter_epoch += 1
-            self.batch_counter = 0
-            if self.counter_epoch > self.max_epoch:
-                raise EOFError("you have reached the max epoch.")
+        if not self.batch_counter < self.num_batches:
+            raise EOFError("one epoch done")
+
         batch_indices = self.indices[self.batch_counter*self.batch_size:(self.batch_counter+1)*self.batch_size]
         batch_features = []
         labels = []
