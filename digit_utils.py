@@ -13,7 +13,7 @@ except ImportError:
     print("Failed to import python_speech_features.\n Try pip install python_speech_features.")
     raise ImportError
 
-PAD_VALUE=0
+PAD_VALUE = 0
 
 
 class Config(object):
@@ -35,7 +35,7 @@ class ConfigTest(object):
 class ConfigDelta(object):
     hidden_size = 100
     feature_size = 39
-    batch_size = 1
+    batch_size = 2
     num_iterations = 10000
     num_classes = 10
 
@@ -47,6 +47,7 @@ class ConfigDeltaTest(object):
     num_iterations = 10000
     num_classes = 10
 
+
 def generating_cls():
     """
     generating the id2cls and cls2id dict
@@ -57,17 +58,17 @@ def generating_cls():
         id2cls[i] = str(i)
 
     cls2id = dict(zip(id2cls.values(), id2cls.keys()))
-    #print(id2cls)
+    # print(id2cls)
     return id2cls, cls2id
 
 
-
-def split_file_names(root_dir, validate_rate = 0.1):
+def split_file_names(root_dir, validate_rate=0.1):
     all_file_names = get_all_file_names(root_dir)
-    num_validate = int(0.1*len(all_file_names))
+    num_validate = int(0.1 * len(all_file_names))
     train_files = all_file_names[0:-num_validate]
     test_files = all_file_names[-num_validate:]
     return train_files, test_files
+
 
 def get_all_file_names(root_dir):
     """
@@ -78,10 +79,10 @@ def get_all_file_names(root_dir):
     single_level_dirs = os.listdir(root_dir)
     file_names = []
     for single_level_dir in single_level_dirs:
-        second_level_dirs = os.listdir(root_dir+'/'+single_level_dir)
+        second_level_dirs = os.listdir(root_dir + '/' + single_level_dir)
         for second_level_dir in second_level_dirs:
-            prefix = root_dir+'/'+single_level_dir
-            file_names.append(prefix+'/'+second_level_dir)
+            prefix = root_dir + '/' + single_level_dir
+            file_names.append(prefix + '/' + second_level_dir)
     return file_names
 
 
@@ -89,7 +90,7 @@ def check_wav_file(file_names):
     checked_list = []
     for f in file_names:
         try:
-            with wave.open(f,"rb") as fr:
+            with wave.open(f, "rb") as fr:
                 checked_list.append(f)
         except Exception:
             print("File [{}] error".format(f))
@@ -117,7 +118,7 @@ def process_audio(file_name):
     try:
         fs, audio = wav.read(file_name)
     except Exception as e:
-        print(file_name,e)
+        print(file_name, e)
 
     processed_audio = mfcc(audio, samplerate=fs)
     delta1 = delta(processed_audio, 1)
@@ -135,7 +136,6 @@ def raw2ndarray(raw_data, file_name):
     return data
 
 
-
 def sparse_tuple_from(sequences, dtype=np.int32):
     """Create a sparse representention of x.
     Args:
@@ -147,12 +147,12 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     values = []
 
     for n, seq in enumerate(sequences):
-        indices.extend(zip([n]*len(seq), range(len(seq))))
+        indices.extend(zip([n] * len(seq), range(len(seq))))
         values.extend(seq)
 
     indices = np.asarray(indices, dtype=np.int64)
     values = np.asarray(values, dtype=dtype)
-    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1]+1], dtype=np.int64)
+    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1] + 1], dtype=np.int64)
     return indices, values, shape
 
 
@@ -160,6 +160,7 @@ class BatchGenerator(object):
     """
     construct a batch generator to generator the next batch
     """
+
     def __init__(self, config, file_names):
         self.file_names = file_names
         self.num_samples = len(self.file_names)
@@ -183,26 +184,33 @@ class BatchGenerator(object):
         if not self.batch_counter < self.num_batches:
             raise StopIteration("one epoch done")
 
-        batch_indices = self.indices[self.batch_counter*self.batch_size:(self.batch_counter+1)*self.batch_size]
+        batch_indices = self.indices[self.batch_counter * self.batch_size:(self.batch_counter + 1) * self.batch_size]
         batch_features = []
         labels = []
         seq_lengths = []
         for index in batch_indices:
             file_name = self.file_names[index]
             feature = process_audio(file_name)
-            feature = (feature - np.mean(feature)) / np.std(feature) # normalize
+            feature = (feature - np.mean(feature)) / np.std(feature)  # normalize
             label = get_digit_label(file_name)
             batch_features.append(feature.astype(np.float32))
             labels.append(label)
             seq_lengths.append(len(feature))
-       
+
+        max_len = max(seq_lengths)
+        padded_batch_features = []
+        # padding the all sequence to the max length of the batch
+        for feature in batch_features:
+            pad_length = max_len - len(feature)
+            padded_feature = feature.tolist() + [[PAD_VALUE] * 39] * pad_length  # ***************** be careful
+            padded_batch_features.append(padded_feature)
+
         self.batch_counter += 1
-        return (np.array(batch_features), np.array(labels), 
-               np.array(seq_lengths).astype(np.int32))
+        return (np.array(padded_batch_features), np.array(labels),
+                np.array(seq_lengths).astype(np.int32))
 
     def next(self):
         return self.__next__()
-
 
 
 if __name__ == '__main__':
@@ -211,8 +219,8 @@ if __name__ == '__main__':
     train_files, test_files = split_file_names(root_dir, 0)
     id2cls, cls2id = generating_cls()
     bg = BatchGenerator(config, train_files)
-    iter_bg = iter(bg)
-    for i in range(10):
-        features, labels, seq_lengths = next(iter_bg)
-        print(features.shape,labels,seq_lengths.shape)
-        #print(labels)
+
+    for features, labels, seq_lengths in bg:
+        print(features.shape, labels, seq_lengths.shape)
+        print(features)
+        # print(labels)
