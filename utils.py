@@ -4,6 +4,7 @@ from pydub import AudioSegment
 import scipy.io.wavfile as wav
 import numpy as np
 import os
+
 try:
     from python_speech_features import mfcc
     from python_speech_features import delta
@@ -11,7 +12,7 @@ except ImportError:
     print("Failed to import python_speech_features.\n Try pip install python_speech_features.")
     raise ImportError
 
-PAD_VALUE=0
+PAD_VALUE = 0
 
 
 class Config(object):
@@ -33,7 +34,7 @@ class ConfigTest(object):
 class ConfigDelta(object):
     hidden_size = 100
     feature_size = 39
-    batch_size = 20
+    batch_size = 1
     num_iterations = 10000
     num_classes = 38
 
@@ -45,6 +46,7 @@ class ConfigDeltaTest(object):
     num_iterations = 10000
     num_classes = 38
 
+
 def generating_cls():
     """
     generating the id2cls and cls2id dict
@@ -52,25 +54,41 @@ def generating_cls():
     """
     id2cls = {}
     id2cls[0] = '鲁'
-    #print('鲁','鲁'.encode())
+    # print('鲁','鲁'.encode())
     for i in range(10):
-        id2cls[i+1] = str(i)
+        id2cls[i + 1] = str(i)
     i = 11
     for j in range(26):
-        char = chr(ord('A')+j)
-        id2cls[i+j] = char
+        char = chr(ord('A') + j)
+        id2cls[i + j] = char
     id2cls[37] = '*'
     cls2id = dict(zip(id2cls.values(), id2cls.keys()))
-    #print(id2cls)
+    # print(id2cls)
     return id2cls, cls2id
 
 
-def split_file_names(root_dir, validate_rate = 0.1):
+def generating_cls_for_digit():
+    """
+    generating the id2cls and cls2id dict
+    :return: (id2cls, cls2id) a tuple of dicts
+    """
+    id2cls = {}
+    # print('鲁','鲁'.encode())
+    for i in range(10):
+        id2cls[i] = str(i)
+
+    cls2id = dict(zip(id2cls.values(), id2cls.keys()))
+    # print(id2cls)
+    return id2cls, cls2id
+
+
+def split_file_names(root_dir, validate_rate=0.1):
     all_file_names = get_all_file_names(root_dir)
-    num_validate = int(0.1*len(all_file_names))
+    num_validate = int(0.1 * len(all_file_names))
     train_files = all_file_names[0:-num_validate]
     test_files = all_file_names[-num_validate:]
     return train_files, test_files
+
 
 def get_all_file_names(root_dir):
     """
@@ -81,10 +99,10 @@ def get_all_file_names(root_dir):
     single_level_dirs = os.listdir(root_dir)
     file_names = []
     for single_level_dir in single_level_dirs:
-        second_level_dirs = os.listdir(root_dir+'/'+single_level_dir)
+        second_level_dirs = os.listdir(root_dir + '/' + single_level_dir)
         for second_level_dir in second_level_dirs:
-            prefix = root_dir+'/'+single_level_dir
-            file_names.append(prefix+'/'+second_level_dir)
+            prefix = root_dir + '/' + single_level_dir
+            file_names.append(prefix + '/' + second_level_dir)
     return file_names
 
 
@@ -95,8 +113,18 @@ def get_car_id(file_name):
     :return: string
     """
     *_, raw_car_id = file_name.split('/')
-    car_id = raw_car_id.replace('.wav','')
+    car_id = raw_car_id.replace('.wav', '')
     return car_id.strip()
+
+
+def get_audio_digit(file_name):
+    """
+    extract the car id from file name
+    :param file_name:  the path to that file
+    :return: string
+    """
+    _, digit, _ = file_name.split('/')
+    return digit.strip()
 
 
 def process_audio(file_name):
@@ -108,8 +136,8 @@ def process_audio(file_name):
     random_db = np.random.randint(-10, 10, size=[])
     song_ = AudioSegment.from_wav(file_name)
     fs = song_.frame_rate
-    song = song_+int(random_db)
-    #song = song_
+    song = song_ + int(random_db)
+    # song = song_
     audio = raw2ndarray(song.raw_data, file_name)
 
     processed_audio = mfcc(audio, samplerate=fs)
@@ -133,9 +161,9 @@ def car_id_to_index(car_id, cls2id):
         raise ValueError("car_id must be a list")
     cls = []
     for id in car_id:
-        #print("id", id.encode())
+        # print("id", id.encode())
         cls.append(cls2id[id])
-    #print(cls)
+    # print(cls)
     return cls
 
 
@@ -150,12 +178,12 @@ def sparse_tuple_from(sequences, dtype=np.int32):
     values = []
 
     for n, seq in enumerate(sequences):
-        indices.extend(zip([n]*len(seq), range(len(seq))))
+        indices.extend(zip([n] * len(seq), range(len(seq))))
         values.extend(seq)
 
     indices = np.asarray(indices, dtype=np.int64)
     values = np.asarray(values, dtype=dtype)
-    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1]+1], dtype=np.int64)
+    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1] + 1], dtype=np.int64)
     return indices, values, shape
 
 
@@ -163,6 +191,7 @@ class BatchGenerator(object):
     """
     construct a batch generator to generator the next batch
     """
+
     def __init__(self, config, file_names, cls2id):
         self.file_names = file_names
         self.num_samples = len(self.file_names)
@@ -187,15 +216,15 @@ class BatchGenerator(object):
         if not self.batch_counter < self.num_batches:
             raise EOFError("one epoch done")
 
-        batch_indices = self.indices[self.batch_counter*self.batch_size:(self.batch_counter+1)*self.batch_size]
+        batch_indices = self.indices[self.batch_counter * self.batch_size:(self.batch_counter + 1) * self.batch_size]
         batch_features = []
         labels = []
         seq_lengths = []
         for index in batch_indices:
             file_name = self.file_names[index]
             feature = process_audio(file_name)
-            feature = (feature - np.mean(feature)) / np.std(feature) # normalize
-            label = car_id_to_index(get_car_id(file_name), self.cls2id)
+            feature = (feature - np.mean(feature)) / np.std(feature)  # normalize
+            label = car_id_to_index(get_audio_digit(file_name), self.cls2id)
             batch_features.append(feature)
             labels.append(label)
             seq_lengths.append(len(feature))
@@ -204,7 +233,7 @@ class BatchGenerator(object):
         # padding the all sequence to the max length of the batch
         for feature in batch_features:
             pad_length = max_len - len(feature)
-            padded_feature = feature.tolist()+[[PAD_VALUE]*39]*pad_length#***************** be careful
+            padded_feature = feature.tolist() + [[PAD_VALUE] * 39] * pad_length  # ***************** be careful
             padded_batch_features.append(padded_feature)
         # for val in padded_batch_features:
         #     print(np.array(val).shape)
@@ -216,15 +245,15 @@ class BatchGenerator(object):
 def main():
     root_dir = 'data'
     config = ConfigDelta()
-    _, test_files = split_file_names(root_dir)
-    id2cls, cls2id = generating_cls()
-    bg = BatchGenerator(config, _, cls2id=cls2id)
+    train_files, _ = split_file_names(root_dir, validate_rate=0)
+    id2cls, cls2id = generating_cls_for_digit()
+    bg = BatchGenerator(config, train_files, cls2id=cls2id)
     iter_bg = iter(bg)
     for i in range(10):
         features, labels, seq_lengths = next(iter_bg)
-        print(features.shape)
-        #print(labels)
-
+        print(labels)
+        print(sparse_tuple_from(labels))
+        # print(labels)
 
 
 if __name__ == '__main__':

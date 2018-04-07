@@ -123,14 +123,16 @@ def main(_):
     with tf.Session() as sess:
         # train model
         tf.global_variables_initializer().run()
-        #8180
-        #saver.restore(sess, save_path=LOG_DIR+'rnn-model.ckpt')
+        # 8180
+        # saver.restore(sess, save_path=LOG_DIR+'rnn-model.ckpt')
 
-        train_writer = tf.summary.FileWriter(logdir=LOG_DIR+"train/", graph=sess.graph)
-        test_writer = tf.summary.FileWriter(logdir=LOG_DIR+"test/", graph=sess.graph)
+        train_writer = tf.summary.FileWriter(logdir=LOG_DIR + "train/", graph=sess.graph)
+        test_writer = tf.summary.FileWriter(logdir=LOG_DIR + "test/", graph=sess.graph)
         for i in range(100000):
             one_epoch(model, train_writer, test_writer, train_files, test_files, id2cls, cls2id)
             if i % 10 == 0:
-                saver.save(sess, save_path=LOG_DIR+'rnn-model.ckpt')
+                saver.save(sess, save_path=LOG_DIR + 'rnn-model.ckpt')
+
+
 if __name__ == '__main__':
     tf.app.run()

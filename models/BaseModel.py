@@ -11,7 +11,7 @@ class BaseModel(object):
         self.config = config
         self.inputs = tf.placeholder(dtype=tf.float32, shape=[config.batch_size, None, config.feature_size])
         self.sparse_labels = tf.sparse_placeholder(dtype=tf.int32)
-        self.labels = tf.placeholder(dtype=tf.int32, shape=[config.batch_size, 7])
+        self.labels = tf.placeholder(dtype=tf.int32, shape=[config.batch_size, 4])
         self.seq_lengths = tf.placeholder(dtype=tf.int32, shape=[config.batch_size])
         self.train = train
         if rnn_type!="lstm" and rnn_type!="gru":
