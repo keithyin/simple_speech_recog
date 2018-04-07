@@ -8,7 +8,7 @@
 """
 import tensorflow as tf
 from models import *
-from utils import *
+from digit_utils import *
 
 FLAG = False
 COUNTER = 0
@@ -33,6 +33,7 @@ def one_iteration(model, batch_data, step, writer, sess=None):
     fetch_list = [model.optimizer, model.merge_summary, model.edit_distance]
     _, summary, edit_distance = sess.run(fetch_list, feed_dict)
     writer.add_summary(summary=summary, global_step=step)
+    print(edit_distance)
     # if edit_distance <= 0.01:
     #     global COUNTER
     #     global FLAG
@@ -56,8 +57,8 @@ def main(_):
     # prepare data
     root_dir = "data"
     train_files, _ = split_file_names(root_dir, validate_rate=0)
-    id2cls, cls2id = generating_cls()
-    bg = BatchGenerator(config, train_files, cls2id=cls2id)
+    # id2cls, cls2id = generating_cls()
+    bg = BatchGenerator(config, train_files)
     iter_bg = iter(bg)
 
     # build model
