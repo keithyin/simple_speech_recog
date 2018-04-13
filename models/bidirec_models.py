@@ -8,6 +8,7 @@ from tensorflow.contrib import rnn
 import re
 from tensorflow.contrib import layers
 
+
 class BiRnnModel(BaseModel):
     def __init__(self, config, rnn_type="lstm", activation_func='tanh', train=True):
         super(BiRnnModel, self).__init__(config, rnn_type, activation_func, train)
@@ -23,7 +24,7 @@ class BiRnnModel(BaseModel):
             else:
                 RNN = rnn.GRUCell
             output = stacked_bidirectional_rnn(RNN, self.config.hidden_size, self.num_layers,
-                                      self.inputs, self.seq_lengths, self.config.batch_size)
+                                               self.inputs, self.seq_lengths, self.config.batch_size)
             # rnn_cell_fw = rnn.MultiRNNCell([rnn_cell_fw(self.config.hidden_size,
             #                                             activation=self.activation_func) for _ in range(self.num_layers)])
             # rnn_cell_bw = rnn.MultiRNNCell([rnn_cell_bw(self.config.hidden_size,
@@ -37,11 +38,11 @@ class BiRnnModel(BaseModel):
             #
             # output = tf.concat(output, axis=2)
 
-            weight = tf.get_variable("weights", shape=[self.config.hidden_size*2, self.config.num_classes])
+            weight = tf.get_variable("weights", shape=[self.config.hidden_size * 2, self.config.num_classes])
 
             bias = tf.get_variable("bias", shape=[self.config.num_classes], initializer=tf.zeros_initializer())
 
-            reshaped_output = tf.reshape(output, shape=[-1, self.config.hidden_size*2])
+            reshaped_output = tf.reshape(output, shape=[-1, self.config.hidden_size * 2])
             logits = tf.nn.bias_add(tf.matmul(reshaped_output, weight), bias)
             logits = tf.reshape(logits, shape=[self.config.batch_size, -1, self.config.num_classes])
             self.logits = tf.transpose(logits, perm=(1, 0, 2))
@@ -66,18 +67,17 @@ class BiRnnModel(BaseModel):
             l2_norm = layers.l2_regularizer(0.001)
             regularization = layers.apply_regularization(l2_norm, tf.get_collection(tf.GraphKeys.WEIGHTS))
 
-
             if self.logits is None:
                 raise ValueError("you must call inference first!")
             self.loss = tf.reduce_mean(tf.nn.ctc_loss(self.sparse_labels, self.logits,
-                                                      sequence_length=self.seq_lengths))+regularization
+                                                      sequence_length=self.seq_lengths)) + regularization
             tf.summary.scalar("loss", self.loss)
             self.edit_distance = tf.reduce_mean(tf.edit_distance(tf.cast(self.prediction[0], tf.int32),
                                                                  self.sparse_labels))
             tf.summary.scalar("edit_distance", self.edit_distance)
             # lr 0.01 0.002
             with tf.control_dependencies([global_step_add_1]):
-                #opt = tf.train.RMSPropOptimizer(0.01, momentum=0.99)
+                # opt = tf.train.RMSPropOptimizer(0.01, momentum=0.99)
                 opt = tf.train.GradientDescentOptimizer(lr_decay)
                 gradients = tf.gradients(self.loss, tf.trainable_variables())
                 # avoiding gradient exploding
@@ -117,7 +117,7 @@ class BiRnnModell1l2(BaseModel):
             else:
                 RNN = rnn.GRUCell
             output = stacked_bidirectional_rnn(RNN, self.config.hidden_size, self.num_layers,
-                                      self.inputs, self.seq_lengths, self.config.batch_size)
+                                               self.inputs, self.seq_lengths, self.config.batch_size)
             # rnn_cell_fw = rnn.MultiRNNCell([rnn_cell_fw(self.config.hidden_size,
             #                                             activation=self.activation_func) for _ in range(self.num_layers)])
             # rnn_cell_bw = rnn.MultiRNNCell([rnn_cell_bw(self.config.hidden_size,
@@ -131,17 +131,17 @@ class BiRnnModell1l2(BaseModel):
             #
             # output = tf.concat(output, axis=2)
 
-            weight = tf.get_variable("weights", shape=[self.config.hidden_size*2, self.config.num_classes])
+            weight = tf.get_variable("weights", shape=[self.config.hidden_size * 2, self.config.num_classes])
 
             bias = tf.get_variable("bias", shape=[self.config.num_classes], initializer=tf.zeros_initializer())
 
-            reshaped_output = tf.reshape(output, shape=[-1, self.config.hidden_size*2])
+            reshaped_output = tf.reshape(output, shape=[-1, self.config.hidden_size * 2])
             logits = tf.nn.bias_add(tf.matmul(reshaped_output, weight), bias)
             logits = tf.reshape(logits, shape=[self.config.batch_size, -1, self.config.num_classes])
             self.logits = tf.transpose(logits, perm=(1, 0, 2))
 
             self.prediction, _ = tf.nn.ctc_greedy_decoder(self.logits, sequence_length=self.seq_lengths)
-            self.infer = tf.sparse_tensor_to_dense(self.prediction[0])
+            self.infer = tf.sparse_tensor_to_dense(self.prediction[0], default_value=10)
 
     def train_op(self):
         name = None
@@ -166,14 +166,14 @@ class BiRnnModell1l2(BaseModel):
             if self.logits is None:
                 raise ValueError("you must call inference first!")
             self.loss = tf.reduce_mean(tf.nn.ctc_loss(self.sparse_labels, self.logits,
-                                                      sequence_length=self.seq_lengths))+regularization
+                                                      sequence_length=self.seq_lengths)) + regularization
             tf.summary.scalar("loss", self.loss)
             self.edit_distance = tf.reduce_mean(tf.edit_distance(tf.cast(self.prediction[0], tf.int32),
                                                                  self.sparse_labels))
             tf.summary.scalar("edit_distance", self.edit_distance)
             # lr 0.01 0.002
             with tf.control_dependencies([global_step_add_1]):
-                #opt = tf.train.RMSPropOptimizer(0.01, momentum=0.99)
+                # opt = tf.train.RMSPropOptimizer(0.01, momentum=0.99)
                 opt = tf.train.GradientDescentOptimizer(lr_decay)
                 gradients = tf.gradients(self.loss, tf.trainable_variables())
                 # avoiding gradient exploding

@@ -4,6 +4,10 @@ from pydub import AudioSegment
 import scipy.io.wavfile as wav
 import numpy as np
 import os
+from collections import defaultdict
+
+def _unk_cls():
+    return "<pad>"
 
 try:
     from python_speech_features import mfcc
@@ -42,9 +46,9 @@ class ConfigDelta(object):
 class ConfigDeltaTest(object):
     hidden_size = 100
     feature_size = 39
-    batch_size = 20
+    batch_size = 2
     num_iterations = 10000
-    num_classes = 38
+    num_classes = 10
 
 
 def generating_cls():
@@ -72,13 +76,14 @@ def generating_cls_for_digit():
     generating the id2cls and cls2id dict
     :return: (id2cls, cls2id) a tuple of dicts
     """
-    id2cls = {}
+    id2cls = defaultdict(_unk_cls)
     # print('鲁','鲁'.encode())
     for i in range(10):
         id2cls[i] = str(i)
 
     cls2id = dict(zip(id2cls.values(), id2cls.keys()))
     # print(id2cls)
+
     return id2cls, cls2id
 
 
@@ -214,7 +219,7 @@ class BatchGenerator(object):
         - seq_length: [batch_size]
         """
         if not self.batch_counter < self.num_batches:
-            raise EOFError("one epoch done")
+            raise StopIteration("one epoch done")
 
         batch_indices = self.indices[self.batch_counter * self.batch_size:(self.batch_counter + 1) * self.batch_size]
         batch_features = []

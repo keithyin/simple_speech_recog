@@ -55,17 +55,17 @@ def one_iteration(model, batch_data, writer, is_training=True):
         writer.add_summary(summary=summary, global_step=GLOBAL_STEP)
         TEST_SUMM_FLAG = False
 
+    global COUNTER
+    global FLAG
     if edit_distance <= 0.01:
-        global COUNTER
-        global FLAG
+
         FLAG = True
         COUNTER += 1
         print("COUNTER->", COUNTER)
         if COUNTER >= 10:
             exit()
     else:
-        global COUNTER
-        global FLAG
+
         if FLAG:
             COUNTER -= 1
             FLAG = False

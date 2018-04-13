@@ -34,21 +34,23 @@ def one_iteration(model, batch_data, step, writer, sess=None):
     _, summary, edit_distance = sess.run(fetch_list, feed_dict)
     writer.add_summary(summary=summary, global_step=step)
     print(edit_distance)
-    # if edit_distance <= 0.01:
-    #     global COUNTER
-    #     global FLAG
-    #     FLAG = True
-    #     COUNTER += 1
-    #     print("COUNTER->", COUNTER)
-    #     if COUNTER >= 10:
-    #         exit()
-    # else:
-    #     global COUNTER
-    #     global FLAG
-    #     if FLAG:
-    #         COUNTER -= 1
-    #         FLAG = False
-    #         print("COUNTER->", COUNTER)
+
+    global COUNTER
+    global FLAG
+
+    if edit_distance <= 0.01:
+
+        FLAG = True
+        COUNTER += 1
+        print("COUNTER->", COUNTER)
+        if COUNTER >= 10:
+            exit()
+    else:
+
+        if FLAG:
+            COUNTER -= 1
+            FLAG = False
+            print("COUNTER->", COUNTER)
 
 
 def main(_):
@@ -59,7 +61,6 @@ def main(_):
     train_files, _ = split_file_names(root_dir, validate_rate=0)
     # id2cls, cls2id = generating_cls()
     bg = BatchGenerator(config, train_files)
-    iter_bg = iter(bg)
 
     # build model
 
@@ -74,8 +75,8 @@ def main(_):
         # saver.restore(sess, save_path=LOG_DIR+'rnn-model.ckpt')
 
         writer = tf.summary.FileWriter(logdir=LOG_DIR, graph=sess.graph)
-        for i in range(config.num_iterations):
-            features, labels, seq_length = next(iter_bg)
+        for i, (features, labels, seq_length) in enumerate(bg):
+
             batch_data = {}
             batch_data['features'] = features
             batch_data['labels'] = labels
